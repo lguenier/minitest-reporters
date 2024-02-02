@@ -96,7 +96,13 @@ module Minitest
           erb_str = File.read(@erb_template)
           renderer = ERB.new(erb_str)
 
-          tests_by_suites = tests.group_by { |test| test_class(test) } # taken from the JUnit reporter
+          tests_by_suites = tests.group_by do |test|
+            test.source_location.first[0..test.source_location.first.rindex(/\//)]
+                .gsub(Rails.root.join("test", "system", "mobile").to_s, "")
+                .split("/")
+                .reject { |c| c.empty?}
+          end
+
 
           suites = tests_by_suites.map do |suite, tests|
             suite_summary = summarize_suite(suite, tests)
@@ -104,14 +110,12 @@ module Minitest
             suite_summary
           end
 
-          suites.sort! { |a, b| compare_suites(a, b) }
-
           result = renderer.result(binding)
           File.open(html_file, 'w') do |f|
             f.write(result)
           end
 
-        # rubocop:disable Lint/RescueException
+          # rubocop:disable Lint/RescueException
         rescue Exception => e
           puts 'There was an error writing the HTML report'
           puts 'This may have been caused by cancelling the test run'
@@ -174,7 +178,7 @@ module Minitest
       # based on analyze_suite from the JUnit reporter
       def summarize_suite(suite, tests)
         summary = Hash.new(0)
-        summary[:name] = suite.to_s
+        summary[:name] = suite.join(" - ").to_s
         tests.each do |test|
           summary[:"#{result(test)}_count"] += 1
           summary[:assertion_count] += test.assertions
