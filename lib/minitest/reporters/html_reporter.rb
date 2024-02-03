@@ -48,7 +48,7 @@ module Minitest
       def friendly_name(test)
         groups = test.name.scan(/(test_\d+_)(.*)/i)
         return test.name if groups.empty?
-        "it #{groups[0][1]}"
+        "#{groups[0][1]}"
       end
 
       # The constructor takes a hash, and uses the following keys:
